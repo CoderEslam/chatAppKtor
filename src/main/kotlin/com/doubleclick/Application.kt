@@ -14,8 +14,4 @@ fun main() {
         configureRouting()
     }.start(wait = true)
 
-
-//    val db = Repo()
-    val jwtService = JwtService()
-    val hashFunction = { s: String -> hash(s) }
 }

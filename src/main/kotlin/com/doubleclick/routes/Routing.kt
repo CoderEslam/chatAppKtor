@@ -1,21 +1,49 @@
 package com.doubleclick.plugins
 
 import com.doubleclick.Repository.DatabaseFactory
+import com.doubleclick.Repository.Repo
+import com.doubleclick.authentication.JwtService
+import com.doubleclick.authentication.hash
+import com.doubleclick.routes.UserRoutes
 import io.ktor.server.routing.*
 import io.ktor.http.*
 import io.ktor.server.locations.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
 
 fun Application.configureRouting() {
     install(Locations) {
+
     }
+    println("Working")
+    DatabaseFactory.init()
+    val db = Repo()
+    val jwtService = JwtService()
+    val hashFunction = { s: String -> hash(s) }
+
+    install(Authentication) {
+
+        jwt("jwt") {
+            verifier(jwtService.varifier)
+            realm = "Chat Server"
+            validate {
+                val payload = it.payload
+                val email = payload.getClaim("email").asString()
+                val user = db.findUserByEmail(email)
+                user // return user
+            }
+
+        }
+    }
+
 
     routing {
         get("/") {
             call.respondText("Hello World!")
-            DatabaseFactory.init()
+
         }
         get<MyLocation> {
             call.respondText("Location: name=${it.name}, arg1=${it.arg1}, arg2=${it.arg2}")
@@ -27,6 +55,15 @@ fun Application.configureRouting() {
         get<Type.List> {
             call.respondText("Inside $it")
         }
+
+        UserRoutes(db = db, jwtService = jwtService, hashFunction = hashFunction)
+
+
+        get("/allUser") {
+//            val email = call.parameters["email"]
+            call.respond(db.getAllUsersInDB().toString());
+        }
+
     }
 }
 
